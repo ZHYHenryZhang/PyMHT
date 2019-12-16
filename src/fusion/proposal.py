@@ -16,6 +16,7 @@ class Proposal():
     self.sensor_type = sensor_type
     self.time = time
     self.models = models
+    self.associated = False
 
   def viz(self):
     for model in self.models:

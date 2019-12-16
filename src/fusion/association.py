@@ -54,7 +54,30 @@ class Association():
       return (pairs[0][1], pairs[0][2])
   
   def associate_multiple_hypothesis(self, proposals, trackers):
-    pass
+    new_proposals = []
+    matched_pairs = []
+    
+    for tracker in trackers:
+      matched_list = []
+      for proposal in proposals:
+        for model in proposal.models:
+          # TODO at December 16, 2019: implement gating method in data association for tracker
+          if tracker.is_in_gate(model):
+            matched_list.append(model)
+            proposal.associated = True
+      if len(matched_list) > 1:
+        # TODO at December 16, 2019: Tracker copy
+        pass
+      if len(matched_list) == 1:
+        matched_pairs.append([tracker, matched_list[0]])
+      else:
+        pass
+        
+      for proposal in proposals:
+        if proposal.associated == False:
+          new_proposals.append(proposal)
+
+    return matched_pairs, new_proposals
   
   def associate_joint_probabilistic_data_association(self, proposals, trackers):
     pass
