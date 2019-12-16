@@ -12,6 +12,7 @@ from src.fusion.point import Point2D
 from src.fusion.box import Box2D
 from src.fusion.proposal import Proposal
 from src.sensor.lidar_proc import LidarProc
+from src.fusion.association import Association
 
 # parameters
 
@@ -38,6 +39,7 @@ class MultiSensorFusion(Fusion):
     self.estimations = []
     self.max_forget_time = 0.1
     self.fig_name = fig_name
+    self.association = Association(mode="GNN")
     
   
   def estimate(self, observations, time_acc):
@@ -121,7 +123,7 @@ class MultiSensorFusion(Fusion):
   
   def sequential_fusion(self, proposals):
     self.predict(proposals)
-    matched_pairs, new_proposals = self.associate(proposals)
+    matched_pairs, new_proposals = self.associate(proposals, self.trackers)
     self.update(matched_pairs)
     self.initialize(new_proposals)
   
@@ -134,34 +136,10 @@ class MultiSensorFusion(Fusion):
     for tracker in self.trackers:
       tracker.predict(proposals[0].time)
   
-  def associate(self, proposals):
-    new_proposals = []
-    matched_pairs = []
-    
-    for proposal in proposals:
-      matched_pair = self.find_best_associate_pair(proposal)
-      if len(matched_pair) > 0:
-        matched_pairs.append(matched_pair)
-      else:
-        new_proposals.append(proposal)
-
+  def associate(self, proposals, trackers):
+    matched_pairs, new_proposals = self.association.associate(proposals, trackers)
     self.new_proposals = new_proposals
     return matched_pairs, new_proposals
-
-  def find_best_associate_pair(self, proposal):
-    ''' return the best association pair between tracker and model, empty list if no match.
-    Best in a sense of matching score. '''
-    pairs = []
-    for model in proposal.models:
-      for tracker in self.trackers:
-        score = tracker.find_associate_score(model)
-        if not score is None:
-          pairs.append((score, tracker, model))
-    if len(pairs) == 0:
-      return []
-    else:
-      sorted(pairs, key=lambda x: x[0])
-      return (pairs[0][1], pairs[0][2])
   
   def initialize(self, new_proposals):
     ''' create a tracker for each model from each proposal '''
